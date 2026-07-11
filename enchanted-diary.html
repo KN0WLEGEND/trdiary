@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>The Diary</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IM+Fell+English:ital@0;1&family=Mrs+Saint+Delafield&family=EB+Garamond:ital@0;1&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --parchment: #e9dfc4;
+    --leather: #2b1c14;
+    --leather-light: #4a2f1f;
+    --ink: #1c1a24;
+    --ghost-ink: #3a2a1a;
+    --ember: #14120f;
+    --ember-glow: rgba(20, 18, 15, 0.28);
+    --stain: rgba(120, 90, 40, 0.15);
+  }
+
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+
+  html, body {
+    margin: 0; padding: 0; height: 100%;
+    background: #0d0805;
+    overflow: hidden;
+    font-family: 'EB Garamond', serif;
+  }
+
+  #stage {
+    height: 100vh; width: 100vw;
+    display: flex; align-items: center; justify-content: center;
+    background: radial-gradient(ellipse at center, #1a1008 0%, #0d0805 70%);
+  }
+
+  .book {
+    position: relative;
+    width: min(92vw, 900px);
+    height: min(90vh, 660px);
+    background: var(--leather);
+    border-radius: 6px;
+    box-shadow: 0 30px 60px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.4), inset 0 0 40px rgba(0,0,0,0.5);
+    display: flex;
+    padding: 14px;
+  }
+
+  .spine {
+    width: 22px;
+    background: linear-gradient(90deg, #1a0f09, var(--leather-light) 50%, #1a0f09);
+    border-radius: 4px;
+    margin-right: 10px;
+    flex-shrink: 0;
+    box-shadow: inset 0 0 10px rgba(0,0,0,0.6);
+  }
+
+  .page {
+    position: relative;
+    flex: 1;
+    background:
+      radial-gradient(ellipse at 20% 10%, var(--stain) 0%, transparent 35%),
+      radial-gradient(ellipse at 85% 90%, var(--stain) 0%, transparent 40%),
+      var(--parchment);
+    border-radius: 3px;
+    box-shadow: inset 0 0 60px rgba(80, 55, 20, 0.35);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .page::before{
+    content: "";
+    position: absolute; inset: 0;
+    background-image: repeating-linear-gradient(0deg, transparent, transparent 33px, rgba(120,95,50,0.13) 34px);
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .title {
+    font-family: 'IM Fell English', serif;
+    font-style: italic; font-weight: 400;
+    font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
+    color: var(--ghost-ink); opacity: 0.5;
+    text-align: center;
+    padding: 26px 0 6px 0;
+    flex-shrink: 0;
+    position: relative; z-index: 1;
+  }
+
+  .surface {
+    flex: 1;
+    position: relative;
+    padding: 10px 42px 20px 42px;
+    overflow-y: auto;
+    z-index: 1;
+  }
+
+  #content {
+    font-family: 'IM Fell English', serif;
+    font-size: 24px;
+    line-height: 34px;
+    color: var(--ink);
+    outline: none;
+    min-height: 100%;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    transition: opacity 1.1s ease, filter 1.1s ease;
+  }
+
+  #content:empty:before {
+    content: attr(data-placeholder);
+    color: rgba(60,45,25,0.35);
+    font-style: italic;
+    pointer-events: none;
+  }
+
+  #content.dissolving {
+    opacity: 0;
+    filter: blur(6px);
+  }
+
+  #content.reply-text {
+    font-family: 'Mrs Saint Delafield', cursive;
+    font-size: 36px;
+    line-height: 46px;
+    letter-spacing: 0.3px;
+    color: var(--ember);
+    filter: url(#inkBleed);
+    text-shadow: 0 0 3px var(--ember-glow);
+    animation: emberPulse 3.2s ease-in-out infinite;
+  }
+
+  #content.reply-text .diary-line {
+    display: block;
+    margin: 6px 0;
+    transform-origin: left center;
+  }
+
+  @keyframes emberPulse {
+    0%, 100% { text-shadow: 0 0 2px var(--ember-glow); }
+    50% { text-shadow: 0 0 5px rgba(20,18,15,0.4); }
+  }
+
+  .thinking-glow {
+    position: absolute;
+    left: 42px;
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--ember);
+    box-shadow: 0 0 8px 3px var(--ember-glow);
+    animation: pulse 1s infinite ease-in-out;
+    opacity: 0;
+    transition: opacity 0.4s ease;
+  }
+  .thinking-glow.show { opacity: 1; }
+  @keyframes pulse {
+    0%,100% { opacity: 0.3; transform: scale(0.8); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+
+  .seal-btn {
+    position: absolute;
+    bottom: 16px; right: 16px;
+    font-family: 'IM Fell English', serif;
+    font-style: italic; font-size: 15px; letter-spacing: 1px;
+    background: rgba(233,223,196,0.85);
+    border: 1px solid var(--ghost-ink);
+    color: var(--ghost-ink);
+    padding: 7px 16px;
+    border-radius: 3px;
+    cursor: pointer;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease;
+    z-index: 2;
+  }
+  .seal-btn.show { opacity: 0.75; pointer-events: auto; }
+  .seal-btn:active { opacity: 1; }
+
+  .again-hint {
+    position: absolute;
+    bottom: 16px; left: 0; right: 0;
+    text-align: center;
+    font-family: 'IM Fell English', serif;
+    font-style: italic; font-size: 15px;
+    color: var(--ghost-ink);
+    opacity: 0;
+    transition: opacity 0.6s ease 0.3s;
+    pointer-events: none;
+    z-index: 2;
+  }
+  .again-hint.show { opacity: 0.45; }
+
+  .error-note {
+    font-family: 'EB Garamond', serif;
+    font-size: 13px;
+    color: #7a2f1f;
+    opacity: 0.8;
+  }
+</style>
+</head>
+<body>
+
+<svg style="position:absolute; width:0; height:0;">
+  <defs>
+    <filter id="inkBleed">
+      <feTurbulence type="fractalNoise" baseFrequency="0.04" numOctaves="2" result="noise" />
+      <feDisplacementMap in="SourceGraphic" in2="noise" scale="2.4" xChannelSelector="R" yChannelSelector="G" />
+    </filter>
+  </defs>
+</svg>
+
+<div id="stage">
+  <div class="book">
+    <div class="spine"></div>
+    <div class="page" id="pageEl">
+      <div class="title">◆ scribble your spell here, if you dare ◆</div>
+      <div class="surface">
+        <span class="thinking-glow" id="glow"></span>
+        <div id="content" contenteditable="true" data-placeholder="Write something spooky..."></div>
+      </div>
+      <button class="seal-btn" id="sealBtn">cast it</button>
+      <div class="again-hint" id="againHint">tap the page for another spell</div>
+    </div>
+  </div>
+</div>
+
+<script>
+const content = document.getElementById('content');
+const sealBtn = document.getElementById('sealBtn');
+const glow = document.getElementById('glow');
+const againHint = document.getElementById('againHint');
+const pageEl = document.getElementById('pageEl');
+
+let state = 'writing'; // writing | dissolving | thinking | replying | done
+
+content.addEventListener('input', () => {
+  if (state !== 'writing') return;
+  const hasText = content.innerText.trim().length > 0;
+  sealBtn.classList.toggle('show', hasText);
+});
+
+sealBtn.addEventListener('click', seal);
+
+pageEl.addEventListener('click', (e) => {
+  if (state === 'done' && e.target !== sealBtn) {
+    resetForNewEntry();
+  }
+});
+
+async function seal() {
+  if (state !== 'writing') return;
+  const text = content.innerText.trim();
+  if (!text) return;
+
+  state = 'dissolving';
+  sealBtn.classList.remove('show');
+  content.setAttribute('contenteditable', 'false');
+  content.classList.add('dissolving');
+
+  await wait(1100);
+
+  content.classList.remove('dissolving');
+  content.textContent = '';
+  content.style.opacity = '0';
+
+  state = 'thinking';
+  glow.classList.add('show');
+
+  try {
+    const reply = await generateReply(text);
+    glow.classList.remove('show');
+    await wait(150);
+    content.classList.add('reply-text');
+    content.style.opacity = '1';
+    state = 'replying';
+    await typewriteDiaryReply(content, reply, 24);
+  } catch (err) {
+    glow.classList.remove('show');
+    content.style.opacity = '1';
+    const p = document.createElement('div');
+    p.className = 'error-note';
+    p.textContent = 'The ink will not flow: ' + (err && err.message ? err.message : 'unknown error');
+    content.appendChild(p);
+  }
+
+  state = 'done';
+  againHint.classList.add('show');
+}
+
+function resetForNewEntry() {
+  content.style.transition = 'opacity 0.6s ease';
+  content.style.opacity = '0';
+  againHint.classList.remove('show');
+  setTimeout(() => {
+    content.classList.remove('reply-text');
+    content.textContent = '';
+    content.setAttribute('contenteditable', 'true');
+    content.style.opacity = '1';
+    content.focus();
+    state = 'writing';
+  }, 600);
+}
+
+function wait(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+document.fonts.ready.then(() => {
+  const loaded = document.fonts.check('40px "Mrs Saint Delafield"');
+  if (!loaded) {
+    const warn = document.createElement('div');
+    warn.style.cssText = 'position:absolute; top:4px; left:4px; z-index:99; font-family:monospace; font-size:10px; color:#900; background:rgba(255,255,255,0.85); padding:2px 6px; border-radius:3px;';
+    warn.textContent = 'font not loaded: Mrs Saint Delafield';
+    document.body.appendChild(warn);
+  }
+});
+
+async function typewriteDiaryReply(container, text, speed) {
+  const words = text.split(' ');
+  const chunks = [];
+  let cur = [];
+  for (const w of words) {
+    cur.push(w);
+    if (cur.length >= (4 + Math.floor(Math.random() * 3))) {
+      chunks.push(cur.join(' '));
+      cur = [];
+    }
+  }
+  if (cur.length) chunks.push(cur.join(' '));
+
+  for (const chunk of chunks) {
+    const line = document.createElement('div');
+    line.className = 'diary-line';
+    const rot = (Math.random() * 4 - 3).toFixed(2);
+    line.style.transform = `rotate(${rot}deg)`;
+    container.appendChild(line);
+    for (const ch of chunk) {
+      line.textContent += ch;
+      await wait(speed);
+    }
+    line.textContent += ' ';
+    await wait(speed * 3);
+  }
+}
+
+const KEYWORD_LINES = {
+  costume: [
+    "What a costume! I can practically feel the magic in it.",
+    "Ooooo — I do love a costume with flair.",
+    "You picked well. This diary approves of a good disguise."
+  ],
+  candy: [
+    "Ah, the sweetest currency in all the land.",
+    "Choose wisely tonight — the best candy always hides at the bottom of the bowl.",
+    "A trick or a treat? Between us, I always vote treat."
+  ],
+  scared: [
+    "Don't worry — I only bite on page corners.",
+    "Spooky is just magic wearing a costume.",
+    "Brave enough to write in a talking diary? You'll be fine tonight."
+  ],
+  ghost: [
+    "Ghosts are just very shy friends who never learned to knock.",
+    "I've met a ghost or two. Mostly polite. Terrible at hide and seek.",
+    "Boo yourself, before it says it to you."
+  ],
+  monster: [
+    "The friendliest monsters are always the ones in costumes.",
+    "Monsters under the bed are just very bad at real estate.",
+    "I've never met a monster I couldn't out-riddle."
+  ],
+  witch: [
+    "Witches make wonderful pumpkin pie, or so I've heard.",
+    "Give my regards to any witches you meet tonight.",
+    "A good witch always shares her candy. Watch for one."
+  ],
+  pumpkin: [
+    "A pumpkin is just a squash with excellent taste in hats.",
+    "I hear pumpkins make fine lanterns for wandering spirits.",
+    "Carve it a good face. First impressions matter, even for gourds."
+  ],
+  trick: [
+    "A trick, hm? I know a few, but mine are all made of ink.",
+    "Careful with tricks — they have a habit of turning into treats.",
+    "The best trick tonight is simply having a good time."
+  ],
+  vampire: [
+    "Vampires are dramatic about everything. Even breakfast.",
+    "I hear they don't love garlic bread. Their loss."
+  ],
+  skeleton: [
+    "Skeletons have great bone structure. Every single one.",
+    "A skeleton walked into a party. No body noticed."
+  ],
+  friend: [
+    "A good friend beside you makes any night less spooky.",
+    "Stick with your friends tonight. Even ghosts travel in groups."
+  ],
+  halloween: [
+    "Happy Halloween, wanderer. May your night be pleasantly spooky.",
+    "My favorite night of the year. Don't tell the other 364.",
+    "Halloween is just the world giving everyone permission to be a little strange."
+  ],
+  "trick or treat": [
+    "Trick or treat indeed — and I'd pick treat every time.",
+    "Say it loud at every door. It's the magic word tonight.",
+    "Trick or treat! Now go on, there's candy waiting."
+  ]
+};
+
+const FALLBACK_LINES = [
+  "Boo! Did I get you?",
+  "Every good Halloween needs one good mystery. Tonight, I suppose that's me.",
+  "Trick or treat, and may your bag grow heavy with candy.",
+  "I like you already. You write with very good handwriting.",
+  "Keep close to your grown-ups tonight — even magic diaries worry sometimes.",
+  "A little spooky, a little sweet — just like tonight ought to be.",
+  "You'll remember this Halloween. I have a feeling.",
+  "Careful on the stairs, wanderer. Even ghosts trip sometimes.",
+  "Not every diary talks back. Consider yourself lucky, or cursed. I forget which."
+];
+
+const QUESTION_LINES = [
+  "Ask again after you've had more candy — everything sounds better then.",
+  "That's a mystery even I haven't solved.",
+  "Some questions are best answered by moonlight, and this isn't quite moonlight yet.",
+  "A fair question deserves a riddle back: what has a face but never smiles, and hands but never waves? A clock. Off you go now."
+];
+
+function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
+
+function generateReply(text) {
+  return new Promise((resolve) => {
+    const delay = 900 + Math.random() * 900;
+    setTimeout(() => {
+      const lower = text.toLowerCase();
+      const isQuestion = /\?\s*$/.test(text.trim());
+
+      const matches = Object.keys(KEYWORD_LINES).filter(k => lower.includes(k));
+      let reply;
+      if (matches.length) {
+        const key = pick(matches);
+        reply = pick(KEYWORD_LINES[key]);
+      } else if (isQuestion) {
+        reply = pick(QUESTION_LINES);
+      } else {
+        reply = pick(FALLBACK_LINES);
+      }
+      resolve(reply);
+    }, delay);
+  });
+}
+</script>
+
+</body>
+</html>
