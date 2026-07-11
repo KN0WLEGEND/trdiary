@@ -214,10 +214,10 @@
   <div class="book">
     <div class="spine"></div>
     <div class="page" id="pageEl">
-      <div class="title">◆ scribble your spell here, if you dare ◆</div>
+      <div class="title"></div>
       <div class="surface">
         <span class="thinking-glow" id="glow"></span>
-        <div id="content" contenteditable="true" data-placeholder="Write something spooky..."></div>
+        <div id="content" contenteditable="true"></div>
       </div>
       <button class="seal-btn" id="sealBtn">cast it</button>
       <div class="again-hint" id="againHint">tap the page for another spell</div>
@@ -404,7 +404,10 @@ const KEYWORD_LINES = {
     "Trick or treat indeed — and I'd pick treat every time.",
     "Say it loud at every door. It's the magic word tonight.",
     "Trick or treat! Now go on, there's candy waiting."
-  ]
+  ],
+    name: [
+    "Hello, my name is Tom Riddle"
+  ],
 };
 
 const FALLBACK_LINES = [
