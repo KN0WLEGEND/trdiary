@@ -151,22 +151,6 @@
     50% { text-shadow: 0 0 5px rgba(20,18,15,0.4); }
   }
 
-  .thinking-glow {
-    position: absolute;
-    left: 42px;
-    width: 8px; height: 8px;
-    border-radius: 50%;
-    background: var(--ember);
-    box-shadow: 0 0 8px 3px var(--ember-glow);
-    animation: pulse 1s infinite ease-in-out;
-    opacity: 0;
-    transition: opacity 0.4s ease;
-  }
-  .thinking-glow.show { opacity: 1; }
-  @keyframes pulse {
-    0%,100% { opacity: 0.3; transform: scale(0.8); }
-    50% { opacity: 1; transform: scale(1.2); }
-  }
 
   .again-hint {
     position: absolute;
