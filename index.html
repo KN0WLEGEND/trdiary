@@ -95,31 +95,51 @@
     z-index: 1;
   }
 
-  #content {
+  #input {
     font-family: 'IM Fell English', serif;
     font-size: 24px;
     line-height: 34px;
     color: var(--ink);
     outline: none;
+    border: none;
+    background: transparent;
+    resize: none;
+    width: 100%;
+    height: 100%;
     min-height: 100%;
-    white-space: pre-wrap;
-    word-wrap: break-word;
+    padding: 0;
+    display: block;
     transition: opacity 1.1s ease, filter 1.1s ease;
   }
 
-  #content:empty:before {
-    content: attr(data-placeholder);
+  #input::placeholder {
     color: rgba(60,45,25,0.35);
     font-style: italic;
-    pointer-events: none;
   }
 
-  #content.dissolving {
+  #input.dissolving {
     opacity: 0;
     filter: blur(6px);
   }
 
-  #content.reply-text {
+  #input.hidden-input {
+    display: none;
+  }
+
+  #reply {
+    display: none;
+    min-height: 100%;
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    opacity: 0;
+    transition: opacity 1.1s ease;
+  }
+
+  #reply.visible {
+    display: block;
+  }
+
+  #reply.reply-text {
     font-family: 'Mrs Saint Delafield', cursive;
     font-size: 36px;
     line-height: 46px;
@@ -130,7 +150,7 @@
     animation: emberPulse 3.2s ease-in-out infinite;
   }
 
-  #content.reply-text .diary-line {
+  #reply .diary-line {
     display: block;
     margin: 6px 0;
     transform-origin: left center;
@@ -214,10 +234,11 @@
   <div class="book">
     <div class="spine"></div>
     <div class="page" id="pageEl">
-      <div class="title"></div>
+      <div class="title">◆ scribble your spell here, if you dare ◆</div>
       <div class="surface">
         <span class="thinking-glow" id="glow"></span>
-        <div id="content" contenteditable="true"></div>
+        <textarea id="input" placeholder="Write something spooky..." autocapitalize="sentences" autocorrect="on"></textarea>
+        <div id="reply"></div>
       </div>
       <button class="seal-btn" id="sealBtn">cast it</button>
       <div class="again-hint" id="againHint">tap the page for another spell</div>
@@ -226,7 +247,8 @@
 </div>
 
 <script>
-const content = document.getElementById('content');
+const input = document.getElementById('input');
+const reply = document.getElementById('reply');
 const sealBtn = document.getElementById('sealBtn');
 const glow = document.getElementById('glow');
 const againHint = document.getElementById('againHint');
@@ -234,10 +256,9 @@ const pageEl = document.getElementById('pageEl');
 
 let state = 'writing'; // writing | dissolving | thinking | replying | done
 
-content.addEventListener('input', () => {
+input.addEventListener('input', () => {
   if (state !== 'writing') return;
-  const hasText = content.innerText.trim().length > 0;
-  sealBtn.classList.toggle('show', hasText);
+  sealBtn.classList.toggle('show', input.value.trim().length > 0);
 });
 
 sealBtn.addEventListener('click', seal);
@@ -250,38 +271,38 @@ pageEl.addEventListener('click', (e) => {
 
 async function seal() {
   if (state !== 'writing') return;
-  const text = content.innerText.trim();
+  const text = input.value.trim();
   if (!text) return;
 
   state = 'dissolving';
   sealBtn.classList.remove('show');
-  content.setAttribute('contenteditable', 'false');
-  content.classList.add('dissolving');
+  input.blur();
+  input.classList.add('dissolving');
 
   await wait(1100);
 
-  content.classList.remove('dissolving');
-  content.textContent = '';
-  content.style.opacity = '0';
+  input.classList.add('hidden-input');
+  reply.classList.add('visible');
+  reply.style.opacity = '0';
 
   state = 'thinking';
   glow.classList.add('show');
 
   try {
-    const reply = await generateReply(text);
+    const replyText = await generateReply(text);
     glow.classList.remove('show');
     await wait(150);
-    content.classList.add('reply-text');
-    content.style.opacity = '1';
+    reply.classList.add('reply-text');
+    reply.style.opacity = '1';
     state = 'replying';
-    await typewriteDiaryReply(content, reply, 24);
+    await typewriteDiaryReply(reply, replyText, 24);
   } catch (err) {
     glow.classList.remove('show');
-    content.style.opacity = '1';
+    reply.style.opacity = '1';
     const p = document.createElement('div');
     p.className = 'error-note';
     p.textContent = 'The ink will not flow: ' + (err && err.message ? err.message : 'unknown error');
-    content.appendChild(p);
+    reply.appendChild(p);
   }
 
   state = 'done';
@@ -289,15 +310,15 @@ async function seal() {
 }
 
 function resetForNewEntry() {
-  content.style.transition = 'opacity 0.6s ease';
-  content.style.opacity = '0';
+  reply.style.opacity = '0';
   againHint.classList.remove('show');
   setTimeout(() => {
-    content.classList.remove('reply-text');
-    content.textContent = '';
-    content.setAttribute('contenteditable', 'true');
-    content.style.opacity = '1';
-    content.focus();
+    reply.classList.remove('reply-text', 'visible');
+    reply.textContent = '';
+    input.value = '';
+    input.classList.remove('dissolving', 'hidden-input');
+    input.style.opacity = '1';
+    input.focus();
     state = 'writing';
   }, 600);
 }
@@ -404,10 +425,7 @@ const KEYWORD_LINES = {
     "Trick or treat indeed — and I'd pick treat every time.",
     "Say it loud at every door. It's the magic word tonight.",
     "Trick or treat! Now go on, there's candy waiting."
-  ],
-    name: [
-    "Hello, my name is Tom Riddle"
-  ],
+  ]
 };
 
 const FALLBACK_LINES = [
