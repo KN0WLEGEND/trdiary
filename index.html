@@ -213,7 +213,7 @@ input.addEventListener('input', () => {
   if (state !== 'writing') return;
   clearTimeout(autoSendTimer);
   if (input.value.trim().length > 0) {
-    autoSendTimer = setTimeout(seal, 3000);
+    autoSendTimer = setTimeout(seal, 7000);
   }
 });
 
@@ -374,6 +374,13 @@ const KEYWORD_LINES = {
     "My favorite night of the year. Don't tell the other 364.",
     "Halloween is just the world giving everyone permission to be a little strange."
   ],
+    "my name": [
+    "Hello, my name is Tom Riddle."
+  ],
+    "Chamber of Secrets": [
+    "I know about the Chamber of Secrets, I can not tell you. I must show you."
+  ],
+  
   "trick or treat": [
     "Trick or treat indeed — and I'd pick treat every time.",
     "Say it loud at every door. It's the magic word tonight.",
