@@ -76,21 +76,10 @@
     z-index: 0;
   }
 
-  .title {
-    font-family: 'IM Fell English', serif;
-    font-style: italic; font-weight: 400;
-    font-size: 14px; letter-spacing: 3px; text-transform: uppercase;
-    color: var(--ghost-ink); opacity: 0.5;
-    text-align: center;
-    padding: 26px 0 6px 0;
-    flex-shrink: 0;
-    position: relative; z-index: 1;
-  }
-
   .surface {
     flex: 1;
     position: relative;
-    padding: 10px 42px 20px 42px;
+    padding: 40px 42px 20px 42px;
     overflow-y: auto;
     z-index: 1;
   }
@@ -109,6 +98,7 @@
     min-height: 100%;
     padding: 0;
     display: block;
+    caret-color: transparent;
     transition: opacity 1.1s ease, filter 1.1s ease;
   }
 
@@ -178,25 +168,6 @@
     50% { opacity: 1; transform: scale(1.2); }
   }
 
-  .seal-btn {
-    position: absolute;
-    bottom: 16px; right: 16px;
-    font-family: 'IM Fell English', serif;
-    font-style: italic; font-size: 15px; letter-spacing: 1px;
-    background: rgba(233,223,196,0.85);
-    border: 1px solid var(--ghost-ink);
-    color: var(--ghost-ink);
-    padding: 7px 16px;
-    border-radius: 3px;
-    cursor: pointer;
-    opacity: 0;
-    pointer-events: none;
-    transition: opacity 0.3s ease;
-    z-index: 2;
-  }
-  .seal-btn.show { opacity: 0.75; pointer-events: auto; }
-  .seal-btn:active { opacity: 1; }
-
   .again-hint {
     position: absolute;
     bottom: 16px; left: 0; right: 0;
@@ -234,13 +205,11 @@
   <div class="book">
     <div class="spine"></div>
     <div class="page" id="pageEl">
-      <div class="title">◆ scribble your spell here, if you dare ◆</div>
       <div class="surface">
         <span class="thinking-glow" id="glow"></span>
-        <textarea id="input" placeholder="Write something spooky..." autocapitalize="sentences" autocorrect="on"></textarea>
+        <textarea id="input" placeholder="" autocapitalize="sentences" autocorrect="on"></textarea>
         <div id="reply"></div>
       </div>
-      <button class="seal-btn" id="sealBtn">cast it</button>
       <div class="again-hint" id="againHint">tap the page for another spell</div>
     </div>
   </div>
@@ -249,22 +218,23 @@
 <script>
 const input = document.getElementById('input');
 const reply = document.getElementById('reply');
-const sealBtn = document.getElementById('sealBtn');
 const glow = document.getElementById('glow');
 const againHint = document.getElementById('againHint');
 const pageEl = document.getElementById('pageEl');
 
 let state = 'writing'; // writing | dissolving | thinking | replying | done
+let autoSendTimer = null;
 
 input.addEventListener('input', () => {
   if (state !== 'writing') return;
-  sealBtn.classList.toggle('show', input.value.trim().length > 0);
+  clearTimeout(autoSendTimer);
+  if (input.value.trim().length > 0) {
+    autoSendTimer = setTimeout(seal, 3000);
+  }
 });
 
-sealBtn.addEventListener('click', seal);
-
 pageEl.addEventListener('click', (e) => {
-  if (state === 'done' && e.target !== sealBtn) {
+  if (state === 'done') {
     resetForNewEntry();
   }
 });
@@ -275,7 +245,6 @@ async function seal() {
   if (!text) return;
 
   state = 'dissolving';
-  sealBtn.classList.remove('show');
   input.blur();
   input.classList.add('dissolving');
 
