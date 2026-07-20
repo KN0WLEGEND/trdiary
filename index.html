@@ -536,28 +536,338 @@ function findMatches(lower) {
   });
 }
 
-function generateReply(text) {
-  return new Promise((resolve) => {
-    const delay = 900 + Math.random() * 900;
-    setTimeout(() => {
-      const lower = text.toLowerCase();
-      const isQuestion = /\?\s*$/.test(text.trim());
+function keywordReply(text) {
+  const lower = text.toLowerCase();
+  const isQuestion = /\?\s*$/.test(text.trim());
+  // Prefer the most specific (longest) keyword match, so phrases like
+  // "trick or treat" win over the shorter "trick" match.
+  const matches = findMatches(lower).sort((a, b) => b.length - a.length);
+  if (matches.length) return pick(KEYWORD_LINES[matches[0]]);
+  if (isQuestion) return pick(QUESTION_LINES);
+  return pick(FALLBACK_LINES);
+}
 
-      // Prefer the most specific (longest) keyword match, so phrases like
-      // "trick or treat" win over the shorter "trick" match.
-      const matches = findMatches(lower).sort((a, b) => b.length - a.length);
+/* ---------------------------------------------------------------------
+ * SEMANTIC MATCHING
+ * ---------------------------------------------------------------------
+ * Runs entirely in the browser (no server, no API key, no per-request
+ * network call) using a small sentence-embedding model. Each category
+ * below reuses the exact same reply lines from KEYWORD_LINES, but is
+ * matched against a handful of example sentences that describe the
+ * *idea*, not just the trigger word — so "I'm dressed as a dragon
+ * tonight" can match the dragon lines even though the word "dragon"
+ * alone would have matched via keyword too.
+ *
+ * If the model fails to load, is still loading when the page is sealed,
+ * or the best match is too weak, generateReply() falls straight back to
+ * keywordReply() above. Nothing here can block or break a reply.
+ * ------------------------------------------------------------------- */
 
-      let reply;
-      if (matches.length) {
-        reply = pick(KEYWORD_LINES[matches[0]]);
-      } else if (isQuestion) {
-        reply = pick(QUESTION_LINES);
-      } else {
-        reply = pick(FALLBACK_LINES);
+const SIM_THRESHOLD = 0.42; // tune after real-world testing; higher = stricter
+const MODEL_WAIT_MS = 1500; // max time a reply will wait on a not-yet-ready model
+
+const SEMANTIC_EXAMPLES = {
+  costume: [
+    "I'm dressed as a dragon tonight",
+    "Look at my costume",
+    "What do you think of my outfit",
+    "I'm wearing a cape and a mask",
+    "My costume took forever to put on"
+  ],
+  candy: [
+    "I got so much candy",
+    "What's your favorite treat",
+    "My bag is already getting heavy",
+    "I hope they have chocolate at the next house",
+    "Should I eat some candy now or wait"
+  ],
+  scared: [
+    "This house looks really scary",
+    "I'm a little nervous right now",
+    "That noise scared me",
+    "I don't want to go in there",
+    "My heart is beating fast"
+  ],
+  ghost: [
+    "I think I just saw a ghost",
+    "Something floated past the window",
+    "Do you believe in ghosts",
+    "That sheet costume looks like a real spirit"
+  ],
+  monster: [
+    "There's a monster on the lawn next door",
+    "I heard something growl in the bushes",
+    "That decoration looks like a real creature",
+    "Are monsters real"
+  ],
+  witch: [
+    "I saw someone flying on a broom",
+    "She has a pointy hat and a black cat",
+    "Is that lady a real witch",
+    "I want to be a witch next year"
+  ],
+  pumpkin: [
+    "We carved a pumpkin yesterday",
+    "Look at that jack o lantern",
+    "I want to grow my own gourd",
+    "The porch light is inside a carved pumpkin"
+  ],
+  trick: [
+    "Are you going to play a trick on me",
+    "I know a good prank",
+    "Let's trick someone tonight",
+    "That was a sneaky move"
+  ],
+  vampire: [
+    "He has fake fangs in his mouth",
+    "I don't like garlic bread",
+    "That cape makes him look like a count",
+    "Vampires only come out at night"
+  ],
+  skeleton: [
+    "That decoration is just bones",
+    "I saw a skeleton hanging on the porch",
+    "My costume glows in the dark like bones"
+  ],
+  friend: [
+    "My best friend is with me tonight",
+    "We're trick-or-treating as a group",
+    "I brought my friend along",
+    "We always go together every year"
+  ],
+  halloween: [
+    "Tonight is the best night of the year",
+    "I love this holiday so much",
+    "This is my favorite time of October",
+    "Happy spooky season"
+  ],
+  hogwarts: [
+    "I wish I went to a magic school",
+    "Which classes would you take there",
+    "I want to live in a castle with moving staircases",
+    "Do you know any secret passages"
+  ],
+  wand: [
+    "I got a new wand for my costume",
+    "How do I make my wand work",
+    "Can you teach me a spell with this",
+    "This stick chose me, I swear"
+  ],
+  spell: [
+    "Can you cast a spell for me",
+    "I want to learn some magic",
+    "Say a magic word",
+    "Do a bit of magic right now"
+  ],
+  wizard: [
+    "I dressed up as a wizard",
+    "Do real wizards exist",
+    "I want magical powers",
+    "What does it take to become a wizard"
+  ],
+  quidditch: [
+    "I want to play a game on a broom",
+    "Who's your favorite team in that flying sport",
+    "Catching the little gold ball sounds fun"
+  ],
+  dragon: [
+    "I'm dressed as a dragon tonight",
+    "Dragons breathe fire, right",
+    "That costume has wings and scales",
+    "I want a pet dragon"
+  ],
+  cat: [
+    "There's a black cat on the porch",
+    "My costume has cat ears and a tail",
+    "I love cats, they're my favorite animal"
+  ],
+  spider: [
+    "There's a huge fake spider on the door",
+    "I don't like spiders very much",
+    "That web decoration is creepy",
+    "Something with eight legs just crawled by"
+  ],
+  "sorting hat": [
+    "Which house would I be in",
+    "Can you sort me",
+    "I want to know my house"
+  ],
+  gryffindor: [
+    "I'm supposed to be brave tonight",
+    "Red and gold is my favorite combo",
+    "I like to be bold and daring"
+  ],
+  slytherin: [
+    "I like to plan ahead",
+    "Green is my favorite color",
+    "I'm pretty ambitious and clever"
+  ],
+  ravenclaw: [
+    "I love puzzles and riddles",
+    "Blue and bronze look cool together",
+    "I ask a lot of questions"
+  ],
+  hufflepuff: [
+    "I like to share my candy with everyone",
+    "Yellow and black is a nice combo",
+    "I try to be kind to everyone"
+  ],
+  broomstick: [
+    "I wish I could fly on a broom",
+    "That's a nice flying stick you've got",
+    "Can brooms actually fly"
+  ],
+  potion: [
+    "What's in this bubbling drink",
+    "I want to brew something magical",
+    "That smells like a strange mixture"
+  ],
+  cauldron: [
+    "There's a big black pot with smoke coming out",
+    "Something is bubbling over there",
+    "That pot looks like it belongs to a witch"
+  ],
+  owl: [
+    "An owl just flew by",
+    "I heard hooting outside",
+    "Owls are cool messengers"
+  ],
+  mummy: [
+    "He's wrapped in bandages head to toe",
+    "That costume is all gauze and wraps",
+    "Watch out, the mummy is coming"
+  ],
+  zombie: [
+    "He's walking really slowly and groaning",
+    "That makeup makes her look undead",
+    "Zombies are shuffling down the street"
+  ],
+  spooky: [
+    "This whole street feels creepy tonight",
+    "That fog machine is really eerie",
+    "Everything feels a little haunted right now"
+  ],
+  boo: [
+    "Boo",
+    "I'm trying to scare you",
+    "Did I scare you just now"
+  ],
+  "my name": [
+    "What's your name",
+    "Who are you",
+    "Tell me your name"
+  ],
+  "chamber of secrets": [
+    "What's the secret room in the castle",
+    "Tell me about the hidden chamber",
+    "Is there a monster locked somewhere in the school"
+  ],
+  "trick or treat": [
+    "Trick or treat",
+    "Give me candy or I'll trick you",
+    "Time to say the magic words at the door"
+  ]
+};
+
+let embedder = null;
+let modelReady = false;
+let modelLoadingPromise = null;
+let exampleVectors = []; // [{ key, vector }]
+
+function initSemanticModel() {
+  if (modelLoadingPromise) return modelLoadingPromise;
+  modelLoadingPromise = (async () => {
+    try {
+      const { pipeline } = await import('https://cdn.jsdelivr.net/npm/@xenova/transformers@2.17.2');
+      embedder = await pipeline('feature-extraction', 'Xenova/all-MiniLM-L6-v2', { quantized: true });
+
+      const tasks = [];
+      for (const [key, examples] of Object.entries(SEMANTIC_EXAMPLES)) {
+        for (const example of examples) {
+          tasks.push(
+            embedText(example).then(vector => ({ key, vector }))
+          );
+        }
       }
-      resolve(reply);
-    }, delay);
+      exampleVectors = await Promise.all(tasks);
+      modelReady = true;
+    } catch (err) {
+      // Model failed to load (offline, blocked CDN, old device, etc).
+      // This is fine — generateReply() will silently use keywordReply().
+      console.warn('Semantic model unavailable, using keyword fallback only.', err);
+      modelReady = false;
+    }
+  })();
+  return modelLoadingPromise;
+}
+
+// Kick off the load immediately so it's ready (or has failed gracefully)
+// well before the first entry is sealed.
+initSemanticModel();
+
+async function embedText(text) {
+  const output = await embedder(text, { pooling: 'mean', normalize: true });
+  return Array.from(output.data);
+}
+
+function dot(a, b) {
+  let sum = 0;
+  for (let i = 0; i < a.length; i++) sum += a[i] * b[i];
+  return sum;
+}
+
+function waitForModel(timeoutMs) {
+  return new Promise((resolve) => {
+    if (modelReady) return resolve(true);
+    let settled = false;
+    const timer = setTimeout(() => {
+      if (!settled) { settled = true; resolve(false); }
+    }, timeoutMs);
+    modelLoadingPromise.then(() => {
+      if (!settled) { settled = true; clearTimeout(timer); resolve(modelReady); }
+    }).catch(() => {
+      if (!settled) { settled = true; clearTimeout(timer); resolve(false); }
+    });
   });
+}
+
+async function semanticReply(text) {
+  const vector = await embedText(text);
+  let best = null;
+  for (const ex of exampleVectors) {
+    const score = dot(vector, ex.vector);
+    if (!best || score > best.score) best = { score, key: ex.key };
+  }
+  if (best && best.score >= SIM_THRESHOLD) {
+    return pick(KEYWORD_LINES[best.key]);
+  }
+  return null;
+}
+
+async function generateReply(text) {
+  const start = Date.now();
+  const minDelay = 900 + Math.random() * 900; // keeps the pause feeling deliberate, not instant
+
+  let reply = null;
+
+  try {
+    const ready = await waitForModel(MODEL_WAIT_MS);
+    if (ready) {
+      reply = await semanticReply(text);
+    }
+  } catch (err) {
+    // Any embedding failure falls straight through to keywords below.
+    console.warn('Semantic match failed, using keyword fallback.', err);
+  }
+
+  if (!reply) {
+    reply = keywordReply(text);
+  }
+
+  const elapsed = Date.now() - start;
+  if (elapsed < minDelay) await wait(minDelay - elapsed);
+
+  return reply;
 }
 </script>
 
