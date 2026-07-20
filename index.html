@@ -98,7 +98,6 @@
     min-height: 100%;
     padding: 0;
     display: block;
-    caret-color: transparent;
     transition: opacity 1.1s ease, filter 1.1s ease;
   }
 
@@ -114,6 +113,12 @@
 
   #input.hidden-input {
     display: none;
+  }
+
+  /* Fade warning shown just before auto-send seals the page */
+  #input.sealing {
+    opacity: 0.45;
+    transition: opacity 0.9s ease;
   }
 
   #reply {
@@ -190,8 +195,7 @@
     <div class="spine"></div>
     <div class="page" id="pageEl">
       <div class="surface">
-        <span class="thinking-glow" id="glow"></span>
-        <textarea id="input" placeholder="" autocapitalize="sentences" autocorrect="on"></textarea>
+        <textarea id="input" placeholder="" autocapitalize="sentences" autocorrect="on" maxlength="300"></textarea>
         <div id="reply"></div>
       </div>
       <div class="again-hint" id="againHint">tap the page for another spell</div>
@@ -202,18 +206,33 @@
 <script>
 const input = document.getElementById('input');
 const reply = document.getElementById('reply');
-const glow = document.getElementById('glow');
 const againHint = document.getElementById('againHint');
 const pageEl = document.getElementById('pageEl');
 
+const MAX_LEN = 300;
+const AUTO_SEND_DELAY = 7000;
+const SEAL_WARNING_LEAD = 1000; // fade begins this many ms before auto-send fires
+
 let state = 'writing'; // writing | dissolving | thinking | replying | done
 let autoSendTimer = null;
+let sealWarningTimer = null;
 
 input.addEventListener('input', () => {
   if (state !== 'writing') return;
+
+  if (input.value.length > MAX_LEN) {
+    input.value = input.value.slice(0, MAX_LEN);
+  }
+
   clearTimeout(autoSendTimer);
+  clearTimeout(sealWarningTimer);
+  input.classList.remove('sealing');
+
   if (input.value.trim().length > 0) {
-    autoSendTimer = setTimeout(seal, 7000);
+    sealWarningTimer = setTimeout(() => {
+      input.classList.add('sealing');
+    }, AUTO_SEND_DELAY - SEAL_WARNING_LEAD);
+    autoSendTimer = setTimeout(seal, AUTO_SEND_DELAY);
   }
 });
 
@@ -228,8 +247,12 @@ async function seal() {
   const text = input.value.trim();
   if (!text) return;
 
+  clearTimeout(autoSendTimer);
+  clearTimeout(sealWarningTimer);
+
   state = 'dissolving';
   input.blur();
+  input.classList.remove('sealing');
   input.classList.add('dissolving');
 
   await wait(1100);
@@ -239,18 +262,15 @@ async function seal() {
   reply.style.opacity = '0';
 
   state = 'thinking';
-  glow.classList.add('show');
 
   try {
     const replyText = await generateReply(text);
-    glow.classList.remove('show');
     await wait(150);
     reply.classList.add('reply-text');
     reply.style.opacity = '1';
     state = 'replying';
     await typewriteDiaryReply(reply, replyText, 24);
   } catch (err) {
-    glow.classList.remove('show');
     reply.style.opacity = '1';
     const p = document.createElement('div');
     p.className = 'error-note';
@@ -269,7 +289,7 @@ function resetForNewEntry() {
     reply.classList.remove('reply-text', 'visible');
     reply.textContent = '';
     input.value = '';
-    input.classList.remove('dissolving', 'hidden-input');
+    input.classList.remove('dissolving', 'hidden-input', 'sealing');
     input.style.opacity = '1';
     input.focus();
     state = 'writing';
@@ -383,7 +403,7 @@ const KEYWORD_LINES = {
     "Trick or treat! Now go on, there's candy waiting."
   ],
 
-    // --- New Harry Potter flavored keywords ---
+  // --- Harry Potter flavored keywords ---
   hogwarts: [
     "Ah, Hogwarts. The castle changes its mind about staircases more than most people change their socks.",
     "I spent seven wonderful years there. The kitchens are just behind a painting of fruit, in case anyone asks.",
@@ -477,10 +497,10 @@ const KEYWORD_LINES = {
     "Boo! Did I get you?",
     "A well-timed 'boo' is an art form. Yours needs practice, or was perfect. I can't quite tell through ink."
   ],
-    "my name": [
+  "my name": [
     "Hello, my name is Tom Riddle."
   ],
-    "chamber of secrets": [
+  "chamber of secrets": [
     "I know about the Chamber of Secrets, I can not tell you. I must show you."
   ]
 };
@@ -506,6 +526,16 @@ const QUESTION_LINES = [
 
 function pick(arr) { return arr[Math.floor(Math.random() * arr.length)]; }
 
+// Word-boundary matching so keywords don't false-positive inside other
+// words (e.g. "cat" inside "vacation", "wand" inside "wandering").
+function findMatches(lower) {
+  return Object.keys(KEYWORD_LINES).filter(k => {
+    const escaped = k.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+    const re = new RegExp('\\b' + escaped + '\\b', 'i');
+    return re.test(lower);
+  });
+}
+
 function generateReply(text) {
   return new Promise((resolve) => {
     const delay = 900 + Math.random() * 900;
@@ -513,11 +543,13 @@ function generateReply(text) {
       const lower = text.toLowerCase();
       const isQuestion = /\?\s*$/.test(text.trim());
 
-      const matches = Object.keys(KEYWORD_LINES).filter(k => lower.includes(k));
+      // Prefer the most specific (longest) keyword match, so phrases like
+      // "trick or treat" win over the shorter "trick" match.
+      const matches = findMatches(lower).sort((a, b) => b.length - a.length);
+
       let reply;
       if (matches.length) {
-        const key = pick(matches);
-        reply = pick(KEYWORD_LINES[key]);
+        reply = pick(KEYWORD_LINES[matches[0]]);
       } else if (isQuestion) {
         reply = pick(QUESTION_LINES);
       } else {
