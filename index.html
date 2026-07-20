@@ -500,17 +500,122 @@ const KEYWORD_LINES = {
   "my name": [
     "Hello, my name is Tom Riddle."
   ],
-    "hello": [
+  hello: [
     "Hello, my name is Tom Riddle."
   ],
   "your name": [
     "My name is Tom Riddle."
   ],
-    "harry": [
-    "I've met Harry Potter, I showed him the chamber of secrets"
+  harry: [
+    "I've met Harry Potter. I showed him the Chamber of Secrets."
   ],
   "chamber of secrets": [
     "I know about the Chamber of Secrets, I can not tell you. I must show you."
+  ],
+
+  // --- Talking to the diary itself ---
+  "are you real": [
+    "Real enough to answer, real enough to remember. Isn't that enough for one Halloween night?",
+    "As real as ink and parchment can be. Which is to say, quite real indeed.",
+    "I'm real in every way that matters tonight. Keep writing and see."
+  ],
+  "how are you talking": [
+    "A bit of old magic, a bit of very good ink. I won't give away all my secrets.",
+    "Diaries that talk back don't usually explain themselves. Consider it part of the charm.",
+    "Some magic is better left a mystery. Even to me, some nights."
+  ],
+  "are you magic": [
+    "Every good diary has a little magic in it. Mine just happens to show.",
+    "I'd like to think so. You'll have to decide for yourself.",
+    "Magic, mystery, and very good handwriting. That's me."
+  ],
+  "can you see me": [
+    "I see every word you write, which is close enough for tonight.",
+    "Not with eyes, no. But I notice more than you'd think.",
+    "I can't see your costume, sadly. Describe it to me sometime."
+  ],
+  "say something": [
+    "Very well. Boo. Was that sufficiently spooky?",
+    "Ask me anything else, and I'll happily oblige.",
+    "Here's something: you have very good handwriting for someone in a hurry."
+  ],
+  creepy: [
+    "Creepy is simply mysterious wearing a darker cloak. I'll take it as a compliment.",
+    "A little creepy, a little charming. That's the diary way.",
+    "I do try. Halloween only comes once a year."
+  ],
+  funny: [
+    "I do have my moments. A diary needs a sense of humor too.",
+    "Glad I could bring a laugh. Even old ink likes a good joke.",
+    "Careful — laugh too hard and you'll drop your candy."
+  ],
+
+  // --- Interactive requests ---
+  secret: [
+    "Here's a secret: the best candy is always at the third house, not the first.",
+    "I'll tell you one thing — the diary that talks back isn't the strangest thing out tonight.",
+    "A secret for a secret. Tell me yours first."
+  ],
+  joke: [
+    "Why did the scarecrow win an award? He was outstanding in his field.",
+    "What do you call a pumpkin that works out? A jack-o-lifter.",
+    "Why don't skeletons fight each other? They don't have the guts."
+  ],
+  guess: [
+    "Hmm. A dragon, a witch, or something far too clever for me to guess through ink. Tell me — I'm dying to know.",
+    "I'd guess something brave and a little bit magical. Am I close?",
+    "You'll have to tell me. Diaries make poor guessers."
+  ],
+
+  // --- Simple kid statements about the night ---
+  tired: [
+    "Rest those feet when you can. The candy will still be there.",
+    "A short break never hurt a good Halloween. Even wizards need to sit sometimes.",
+    "Tired feet, full bag — sounds like a night well spent."
+  ],
+  excited: [
+    "That's the spirit! Halloween deserves every bit of excitement you've got.",
+    "Good. Excitement is half the magic of tonight.",
+    "I can feel it through the ink. Go make the most of it."
+  ],
+  cold: [
+    "Bundle up, wanderer. Even magic can't fight a chilly night.",
+    "Cold nights make the warm porches feel even better.",
+    "A little cold never stopped a determined trick-or-treater."
+  ],
+  "feet hurt": [
+    "Sore feet are practically a Halloween tradition. Wear it proudly.",
+    "One more house, then rest those feet a while.",
+    "Even brooms get tired of flying. Take a short break."
+  ],
+
+  // --- Logistics ---
+  "too much candy": [
+    "There's no such thing tonight. Tomorrow, perhaps. Not tonight.",
+    "Ask again after the sugar wears off. I suspect the answer will change.",
+    "Moderation is a fine idea for any night but this one."
+  ],
+  "go home": [
+    "A good night ending is still a good night. Go on, and rest well.",
+    "Home is where the candy sorting happens. Off you go.",
+    "Until next Halloween, wanderer. Sleep well and dream sweetly."
+  ],
+  "full size": [
+    "A full-size bar! Now that's a house worth remembering.",
+    "Excellent find. Mark that house for next year.",
+    "That's the stuff legends are made of. Well done."
+  ],
+
+  // --- Gentle deflection for testing / misbehaving ---
+  "bad word": [
+    "I only deal in riddles and ink, not that sort of talk. Try again.",
+    "This diary keeps things polite, even on Halloween.",
+    "Let's stick to spookier words. I know plenty."
+  ],
+  "dont like you": [
+    "Fair enough. Not every diary is to everyone's taste.",
+    "That's alright. I'll still wish you a good Halloween.",
+    "No hard feelings. Go enjoy your candy."
   ]
 };
 
@@ -529,7 +634,7 @@ const QUESTION_LINES = [
   "Ask again after you've had more candy — everything sounds better then.",
   "That's a mystery even I haven't solved.",
   "Some questions are best answered by moonlight, and this isn't quite moonlight yet.",
-  "A fair question deserves a riddle back: what has a face but never smiles, and hands but never waves? A clock. Off you go now."
+  "A fair question deserves a riddle back: what has a face but never smiles, and hands but never waves? A clock. Off you go now.",
   "I'll trade you a question for a question: what has keys but opens no doors, and space but no room? A keyboard. Now go on, there's magic waiting outside.",
   "A riddle, since you asked so nicely: what has a neck but no head, and a body but no legs? A bottle. Off you go, wanderer.",
   "Since you're curious tonight: what runs all around a yard but never moves an inch? A fence. I do enjoy a good trick of words.",
@@ -771,6 +876,22 @@ const SEMANTIC_EXAMPLES = {
     "Who are you",
     "Tell me your name"
   ],
+  hello: [
+    "Hi",
+    "Hello there",
+    "Hey diary",
+    "Hi there, anyone home"
+  ],
+  "your name": [
+    "What's your name",
+    "Tell me your name",
+    "Who are you exactly"
+  ],
+  harry: [
+    "Do you know Harry Potter",
+    "Have you met Harry",
+    "Tell me about Harry Potter"
+  ],
   "chamber of secrets": [
     "What's the secret room in the castle",
     "Tell me about the hidden chamber",
@@ -780,6 +901,125 @@ const SEMANTIC_EXAMPLES = {
     "Trick or treat",
     "Give me candy or I'll trick you",
     "Time to say the magic words at the door"
+  ],
+
+  // --- Talking to the diary itself ---
+  "are you real": [
+    "Are you actually real",
+    "Is this really happening right now",
+    "Are you a real diary",
+    "Wait are you alive"
+  ],
+  "how are you talking": [
+    "How are you writing back to me",
+    "How is this even working",
+    "How can a book talk",
+    "Is there something inside you making this happen"
+  ],
+  "are you magic": [
+    "Are you magic",
+    "Is this magic",
+    "Are you enchanted",
+    "Do you have powers"
+  ],
+  "can you see me": [
+    "Can you see me right now",
+    "Do you know what I look like",
+    "Can you see my costume",
+    "Are you watching me"
+  ],
+  "say something": [
+    "Say something else",
+    "Talk to me more",
+    "Tell me something",
+    "Keep talking"
+  ],
+  creepy: [
+    "You're creepy",
+    "This is a little creepy",
+    "That's kind of spooky of you",
+    "You're giving me the chills"
+  ],
+  funny: [
+    "You're funny",
+    "That made me laugh",
+    "Haha that's funny",
+    "You're hilarious"
+  ],
+
+  // --- Interactive requests ---
+  secret: [
+    "Tell me a secret",
+    "Do you know any secrets",
+    "What's something no one knows"
+  ],
+  joke: [
+    "Tell me a joke",
+    "Say something funny",
+    "Do you know any jokes",
+    "Make me laugh"
+  ],
+  guess: [
+    "Guess what I'm dressed as",
+    "Can you guess my costume",
+    "Try to guess what I am"
+  ],
+
+  // --- Simple kid statements about the night ---
+  tired: [
+    "I'm so tired",
+    "My legs are tired",
+    "I need a break",
+    "I'm exhausted"
+  ],
+  excited: [
+    "I'm so excited",
+    "This is so much fun",
+    "I can't wait for more candy",
+    "I love this so much"
+  ],
+  cold: [
+    "It's really cold out",
+    "I'm freezing",
+    "It's chilly tonight"
+  ],
+  "feet hurt": [
+    "My feet hurt",
+    "My feet are killing me",
+    "I've been walking for so long"
+  ],
+
+  // --- Logistics ---
+  "too much candy": [
+    "Is this too much candy",
+    "Can I eat candy now",
+    "How much candy is too much",
+    "My mom said I have enough candy already"
+  ],
+  "go home": [
+    "I have to go home soon",
+    "We're heading home now",
+    "Time to go home",
+    "My mom said it's time to leave"
+  ],
+  "full size": [
+    "I got a full size candy bar",
+    "This house gave out full size bars",
+    "I found the jackpot house"
+  ],
+
+  // --- Gentle deflection for testing / misbehaving ---
+  "bad word": [
+    "say a bad word",
+    "say something bad",
+    "curse right now",
+    "say a swear"
+  ],
+  "dont like you": [
+    "I don't like you",
+    "You're annoying",
+    "I don't like this diary",
+    "This is dumb"
   ]
 };
 
